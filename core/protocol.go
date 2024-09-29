@@ -88,7 +88,7 @@ func QueryIp(server string, token *[48]byte) ([]byte, *tls.UConn, error) {
 	}
 
 	log.Printf("query ip: wrote %d bytes", n)
-	DumpHex(message[:n])
+	//DumpHex(message[:n])
 
 	reply := make([]byte, 0x80)
 	n, err = conn.Read(reply)
@@ -98,12 +98,30 @@ func QueryIp(server string, token *[48]byte) ([]byte, *tls.UConn, error) {
 	}
 
 	log.Printf("query ip: read %d bytes", n)
-	DumpHex(reply[:n])
+	//DumpHex(reply[:n])
 
 	if reply[0] != 0x00 {
 		debug.PrintStack()
 		return nil, nil, errors.New("unexpected query ip reply")
 	}
+
+	CheckQueryConnected := func() {
+		counter := 0
+		for counter < 1 {
+			for {
+				n, err = conn.Read(reply)
+				DumpHex(reply[:n])
+				if err == io.EOF {
+					log.Printf("query ip: connection closed")
+					break
+				}
+			}
+			counter += 1
+		}
+		panic("query ip: connection closed")
+	}
+
+	go CheckQueryConnected()
 
 	return reply[4:8], conn, nil
 }
@@ -126,7 +144,7 @@ func BlockRXStream(server string, token *[48]byte, ipRev *[4]byte, ep *EasyConne
 		return err
 	}
 	log.Printf("recv handshake: wrote %d bytes", n)
-	DumpHex(message[:n])
+	//DumpHex(message[:n])
 
 	reply := make([]byte, 1500)
 	n, err = conn.Read(reply)
@@ -134,7 +152,7 @@ func BlockRXStream(server string, token *[48]byte, ipRev *[4]byte, ep *EasyConne
 		return err
 	}
 	log.Printf("recv handshake: read %d bytes", n)
-	DumpHex(reply[:n])
+	//DumpHex(reply[:n])
 
 	if reply[0] != 0x01 {
 		return errors.New("unexpected recv handshake reply")
@@ -174,7 +192,7 @@ func BlockTXStream(server string, token *[48]byte, ipRev *[4]byte, ep *EasyConne
 		return err
 	}
 	log.Printf("send handshake: wrote %d bytes", n)
-	DumpHex(message[:n])
+	//DumpHex(message[:n])
 
 	reply := make([]byte, 1500)
 	n, err = conn.Read(reply)
@@ -182,7 +200,7 @@ func BlockTXStream(server string, token *[48]byte, ipRev *[4]byte, ep *EasyConne
 		return err
 	}
 	log.Printf("send handshake: read %d bytes", n)
-	DumpHex(reply[:n])
+	//DumpHex(reply[:n])
 
 	if reply[0] != 0x02 {
 		return errors.New("unexpected send handshake reply")
@@ -212,11 +230,11 @@ func StartProtocol(endpoint *EasyConnectEndpoint, server string, token *[48]byte
 		for counter < 5 {
 			err := BlockRXStream(server, token, ipRev, endpoint, debug)
 			if err != nil {
-				log.Print("Error occurred while receiving, retrying: " + err.Error())
+				log.Print("Error occurred while recv, retrying: " + err.Error())
 			}
 			counter += 1
 		}
-		panic("receive retry limit exceeded.")
+		panic("recv retry limit exceeded.")
 	}
 
 	go RX()

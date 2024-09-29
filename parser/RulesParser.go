@@ -272,7 +272,9 @@ func ParseResourceLists(host, twfID string, debug bool) {
 			DnsDataRegexp := regexp2.MustCompile("(?<=<Dns dnsserver=\"\" data=\")[0-9A-Za-z:;.-]*?(?=\")", 0)
 			DnsDataRegexpMatches, _ := DnsDataRegexp.FindStringMatch(resUrlDecodedValue)
 
-			processDnsData(DnsDataRegexpMatches.String(), debug)
+			if DnsDataRegexpMatches != nil {
+				processDnsData(DnsDataRegexpMatches.String(), debug)
+			}
 
 			log.Printf("Parsed %v Dns rules", config.GetDnsRuleLen())
 		}
