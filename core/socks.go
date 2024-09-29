@@ -57,7 +57,7 @@ func ServeSocks5(ipStack *stack.Stack, selfIp []byte, bindAddr string) {
 				return nil, errors.New("resolve ip addr failed: " + ip)
 			}
 
-			if !useL3transport && config.IsDomainRuleAvailable() {
+			if (!useL3transport || (useL3transport && allowedPorts != nil && (port < allowedPorts[0] || port > allowedPorts[1]) && allowedPorts[1] == 0)) && config.IsDomainRuleAvailable() {
 				log.Printf("final ip: %s", target.IP.String())
 				allowedPorts, useL3transport = config.GetSingleDomainRule(target.IP.String())
 			}
